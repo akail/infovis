@@ -1,2 +1,3 @@
-# infovix
+# Infovis
+
 Information Visualization Class Project
