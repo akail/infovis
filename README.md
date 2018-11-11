@@ -1,3 +1,13 @@
 # Infovis
 
 Information Visualization Class Project
+
+# Installing requirements
+
+    pip install -r requirement.txt
+
+# Running the application
+
+    bokeh server --show app.py
+
+The application will now be available locally at https://localhost:5006
