@@ -51,7 +51,7 @@ def make_plot(field='tmax'):
     TOOLS = "pan,wheel_zoom,reset,hover,save"
 
     p = figure(
-        title="Test Map", tools=TOOLS,
+        title=field.capitalize(), tools=TOOLS,
         x_axis_location=None, y_axis_location=None,
         plot_width=550, plot_height=350,
         x_range=(-180, -50),
