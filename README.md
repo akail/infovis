@@ -11,3 +11,8 @@ Information Visualization Class Project
     bokeh server --show app.py
 
 The application will now be available locally at https://localhost:5006
+
+
+# To Do
+* [X] Add better coloring for temperature, precipitation, air quality
+

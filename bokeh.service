@@ -1,0 +1,13 @@
+[Unit]
+Description=Start bokeh server at startup
+After=syslog.target network.target
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/root/infovis
+
+ExecStart=/usr/local/bin/bokeh serve --allow-websocket-origin=142.93.179.201:5006 app.py
+
+[Install]
+WantedBy=multi-user.target
