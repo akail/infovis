@@ -17,9 +17,7 @@ states.pop('DC')
 
 dfs = dict()
 for year in range(2013, 2018):
-    tmp_df = pd.read_csv(f'data/{year}_processed.csv')
-    tmp_df['tmax'] = tmp_df['tmax'] * 0.1 * 9 / 5 + 32
-    dfs[year] = tmp_df
+    dfs[year] = pd.read_csv(f'data/{year}_processed.csv')
 
 
 df = pd.concat(dfs)
