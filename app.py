@@ -9,18 +9,24 @@ from bokeh.plotting import figure, curdoc
 from bokeh.layouts import row, column, gridplot
 from bokeh.models.widgets import Select
 from bokeh.sampledata.us_states import data as states
+from bokeh.themes import built_in_themes
 import pandas as pd
 
 ## Load and process data
 states = collections.OrderedDict(sorted(states.items()))
 states.pop('DC')
+states.pop('AK')
+states.pop('HI')
 
 dfs = dict()
 for year in range(2013, 2018):
-    dfs[year] = pd.read_csv(f'data/{year}_processed.csv')
+    tmp_df = pd.read_csv(f'data/{year}_processed.csv')
+    tmp_df = tmp_df[ ~tmp_df['State'].isin(['AK', 'HI'])]
+    dfs[year] = tmp_df
 
 
-df = pd.concat(dfs)
+df = pd.concat(dfs, names=['year'])
+
 
 
 # Selection box
@@ -37,10 +43,10 @@ state_names = [state['name'] for state in states.values()]
 Blues9.reverse()
 diffs = RdBu11.copy()
 # diffs.reverse()
-temp_cmap = LinearColorMapper(palette=RdBu11)
-diff_cmap = LinearColorMapper(palette=diffs, low=-25, high=25)
-prcp_cmap = LinearColorMapper(palette=Blues9)
-aqi_cmap = LinearColorMapper(palette=BrBG11)
+temp_cmap = LinearColorMapper(palette=RdBu11, low=df['tmax'].min(), high=df['tmax'].max())
+diff_cmap = LinearColorMapper(palette=diffs, low=-50, high=50)
+prcp_cmap = LinearColorMapper(palette=Blues9, low=0, high=df['prcp'].max())
+aqi_cmap = LinearColorMapper(palette=BrBG11, low=df['Median AQI'].min(), high=df['Median AQI'].max())
 
 temp_cbar = ColorBar(color_mapper=temp_cmap, label_standoff=12, border_line_color=None, location=(0,0))
 prcp_cbar = ColorBar(color_mapper=prcp_cmap, label_standoff=12, border_line_color=None, location=(0,0))
@@ -73,8 +79,8 @@ def make_plot(title, field, cmap, units, cbar=None):
     p = figure(
         title=title,
         x_axis_location=None, y_axis_location=None,
-        plot_width=550, plot_height=350,
-        x_range=(-180, -50),
+        plot_width=250, plot_height=200,
+        x_range=(-125, -65),
         tooltips=[
             ("Name", "@name"), (field, f"@{field} {units}"), ("(Long, Lat)", "($x, $y)")
         ])
