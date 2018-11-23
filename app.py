@@ -7,9 +7,10 @@ from bokeh.models import LinearColorMapper, ColumnDataSource, ColorBar
 from bokeh.palettes import RdBu11, RdBu10, BrBG11, Blues9
 from bokeh.plotting import figure, curdoc
 from bokeh.layouts import row, column, gridplot
-from bokeh.models.widgets import Select
+from bokeh.models.widgets import Select, Paragraph, Slider, Div
 from bokeh.sampledata.us_states import data as states
 from bokeh.themes import built_in_themes
+import numpy as np
 import pandas as pd
 
 ## Load and process data
@@ -20,37 +21,59 @@ states.pop('HI')
 
 dfs = dict()
 for year in range(2013, 2018):
-    tmp_df = pd.read_csv(f'data/{year}_processed.csv')
+    tmp_df = pd.read_csv(f'data/{year}_processed.csv',
+                         usecols=['State', 'Year', 'Median AQI', 'prcp', 'tmax'])
     tmp_df = tmp_df[ ~tmp_df['State'].isin(['AK', 'HI'])]
+    tmp_df.index = list(range(48))
     dfs[year] = tmp_df
 
-
 df = pd.concat(dfs, names=['year'])
+
+data_2018 = {}
+years = list(range(2013, 2018))
+df2 = df.set_index(['State', 'Year'])
+for n, state in enumerate(states):
+    state_data = {}
+    state_data['Year'] = 2018
+    state_data['State'] = state
+    for dtype in ['tmax', 'prcp', 'Median AQI']:
+        fit = np.polyfit(years, df2.loc[state, dtype], 1)
+        state_data[dtype] = 2018 * fit[0] + fit[1]
+        data_2018[n] = state_data
+
+
+
+dfs[2018] = pd.DataFrame(data_2018).T
+df = pd.concat(dfs, names=['year'], sort=False)
 
 
 
 # Selection box
-year_select_left = Select(value='2013', options=list(map(str, range(2013,2018))))
-year_select_right = Select(value='2014', options=list(map(str, range(2013,2018))))
+slider_left = Slider(start=2013, end=2018, value=2013, step=1, title='Comparison Year Left')
+slider_right = Slider(start=2013, end=2018, value=2014, step=1, title='Comparison Year Right')
 
 state_xs = [state["lons"] for state in states.values()]
 state_ys = [state["lats"] for state in states.values()]
 state_names = [state['name'] for state in states.values()]
 
 # get color palletes
-# [ ] note to selv, low and high can be set for the color mappers
-# [ ] Set the ranges
 Blues9.reverse()
 diffs = RdBu11.copy()
+diffs_prcp = RdBu11.copy()
+diffs_prcp.reverse()
 # diffs.reverse()
 temp_cmap = LinearColorMapper(palette=RdBu11, low=df['tmax'].min(), high=df['tmax'].max())
-diff_cmap = LinearColorMapper(palette=diffs, low=-50, high=50)
+diff_cmap = LinearColorMapper(palette=diffs, low=-25, high=25)
+diff_cmap_prcp = LinearColorMapper(palette=diffs_prcp, low=-25, high=25)
 prcp_cmap = LinearColorMapper(palette=Blues9, low=0, high=df['prcp'].max())
 aqi_cmap = LinearColorMapper(palette=BrBG11, low=df['Median AQI'].min(), high=df['Median AQI'].max())
 
 temp_cbar = ColorBar(color_mapper=temp_cmap, label_standoff=12, border_line_color=None, location=(0,0))
 prcp_cbar = ColorBar(color_mapper=prcp_cmap, label_standoff=12, border_line_color=None, location=(0,0))
 aqi_cbar = ColorBar(color_mapper=aqi_cmap, label_standoff=12, border_line_color=None, location=(0,0))
+diff_cbar1 = ColorBar(color_mapper=diff_cmap, label_standoff=12, border_line_color=None, location=(0,0))
+diff_cbar2 = ColorBar(color_mapper=diff_cmap_prcp, label_standoff=12, border_line_color=None, location=(0,0))
+diff_cbar3 = ColorBar(color_mapper=diff_cmap, label_standoff=12, border_line_color=None, location=(0,0))
 
 data=dict(
     x=state_xs,
@@ -79,8 +102,9 @@ def make_plot(title, field, cmap, units, cbar=None):
     p = figure(
         title=title,
         x_axis_location=None, y_axis_location=None,
-        plot_width=250, plot_height=200,
+        plot_width=550, plot_height=350,
         x_range=(-125, -65),
+        tools=['tap,reset'],
         tooltips=[
             ("Name", "@name"), (field, f"@{field} {units}"), ("(Long, Lat)", "($x, $y)")
         ])
@@ -98,8 +122,8 @@ def make_plot(title, field, cmap, units, cbar=None):
     return p
 
 def year_change(attrname, old, new):
-    left = year_select_left.value
-    right = year_select_right.value
+    left=slider_left.value
+    right=slider_right.value
 
     data=dict(
         x=state_xs,
@@ -123,20 +147,25 @@ def year_change(attrname, old, new):
     )
     source.data = data
 
-year_select_left.on_change('value', year_change)
-year_select_right.on_change('value', year_change)
+slider_left.on_change('value', year_change)
+slider_right.on_change('value', year_change)
 
 
-grid = gridplot([[year_select_left, year_select_right, None],
-                 [make_plot('Average Max Temperature', 'tmax_left', temp_cmap, 'F', cbar=temp_cbar),
-                  make_plot('Average Max Temperature', 'tmax_middle', temp_cmap, 'F'),
-                  make_plot('Average Max Temperature', 'tmax_right', diff_cmap, '%')],
+grid = gridplot([[Div(text="<h1>Climate analysis</h1><p>This application visualizes the regional "
+                      "temperature, precipitation, and air quality for the contiguous United States."
+                      "The values for 2018 are predicted using a simple linear regression."
+                      "Individual states can be selected, with the selection reset button in the "
+                      "top right.</p>", width=800)],
+                 [slider_left, slider_right],
+                 [make_plot('Max Temperature', 'tmax_left', temp_cmap, 'F', cbar=temp_cbar),
+                  make_plot('', 'tmax_middle', temp_cmap, 'F'),
+                  make_plot('Percent Change', 'tmax_right', diff_cmap, '%', cbar=diff_cbar1)],
                  [make_plot('Precipitation', 'prcp_left', prcp_cmap, 'inches', cbar=prcp_cbar),
-                  make_plot('Precipitation', 'prcp_middle', prcp_cmap, 'inches'),
-                  make_plot('Precipitation', 'prcp_right', diff_cmap, 'inches')],
+                  make_plot('', 'prcp_middle', prcp_cmap, 'inches'),
+                  make_plot('Percent Change', 'prcp_right', diff_cmap_prcp, 'inches', cbar=diff_cbar2)],
                  [make_plot('Air Quality Index', 'aqi_left', aqi_cmap, 'AQI', cbar=aqi_cbar),
-                  make_plot('Air Quality Index', 'aqi_middle', aqi_cmap, 'AQI'),
-                  make_plot('Air Quality Index', 'aqi_right', diff_cmap, 'AQI')],
+                  make_plot('', 'aqi_middle', aqi_cmap, 'AQI'),
+                  make_plot('Air Quality Index', 'aqi_right', diff_cmap, 'AQI', cbar=diff_cbar3)],
                  ],
                 merge_tools=True,
                 )
