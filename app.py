@@ -162,10 +162,10 @@ grid = gridplot([[Div(text="<h1>Climate analysis</h1><p>This application visuali
                   make_plot('Percent Change', 'tmax_right', diff_cmap, '%', cbar=diff_cbar1)],
                  [make_plot('Precipitation', 'prcp_left', prcp_cmap, 'inches', cbar=prcp_cbar),
                   make_plot('', 'prcp_middle', prcp_cmap, 'inches'),
-                  make_plot('Percent Change', 'prcp_right', diff_cmap_prcp, 'inches', cbar=diff_cbar2)],
+                  make_plot('Percent Change', 'prcp_right', diff_cmap_prcp, '%', cbar=diff_cbar2)],
                  [make_plot('Air Quality Index', 'aqi_left', aqi_cmap, 'AQI', cbar=aqi_cbar),
                   make_plot('', 'aqi_middle', aqi_cmap, 'AQI'),
-                  make_plot('Air Quality Index', 'aqi_right', diff_cmap, 'AQI', cbar=diff_cbar3)],
+                  make_plot('Percent Change', 'aqi_right', diff_cmap, '%', cbar=diff_cbar3)],
                  ],
                 merge_tools=True,
                 )
